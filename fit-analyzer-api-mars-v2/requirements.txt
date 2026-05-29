@@ -1,4 +1,0 @@
-fastapi==0.115.5
-uvicorn==0.32.1
-python-multipart==0.0.12
-fitparse==1.2.0
