@@ -1,0 +1,16 @@
+.venv/
+logs/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.env.*
+reports/
+*.fit
+*.FIT
+*.tcx
+*.TCX
+*.gpx
+*.GPX
+*.zip
+*.ZIP
