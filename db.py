@@ -65,6 +65,29 @@ def _ensure_gear_service_table(conn):
             km_at_service NUMERIC(10,1), cost_mxn NUMERIC(10,2),
             shop TEXT, notes TEXT, created_at TIMESTAMPTZ DEFAULT NOW())""")
     conn.commit()
+
+def _ensure_gear_activity_links_table(conn):
+    """Future model: link clean activities to gear/components for real component km."""
+    with conn.cursor() as cur:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS gear_activity_links (
+                id SERIAL PRIMARY KEY,
+                session_id TEXT,
+                source_activity_id TEXT,
+                gear_id TEXT NOT NULL,
+                gear_source TEXT DEFAULT 'manual',
+                role TEXT,
+                confidence TEXT DEFAULT 'manual',
+                notes TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE(session_id, source_activity_id, gear_id, role)
+            )
+        """)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gear_activity_links_session ON gear_activity_links(session_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gear_activity_links_source_activity ON gear_activity_links(source_activity_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_gear_activity_links_gear ON gear_activity_links(gear_id)")
+    conn.commit()
+
 def _ensure_nutrition_table(conn):
     with conn.cursor() as cur:
         cur.execute("""
@@ -591,6 +614,7 @@ def _init_db(conn):
                 cur.execute(idx_sql)
             except Exception:
                 pass
+    _ensure_gear_activity_links_table(conn)
     _ensure_clean_sessions_compat_view(conn)
 
 def _ensure_weight_table(conn):
