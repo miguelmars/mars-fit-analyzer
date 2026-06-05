@@ -14,3 +14,7 @@ reports/
 *.GPX
 *.zip
 *.ZIP
+*.log
+*.sqlite
+*.db
+.pytest_cache/
