@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+fitparse
+psycopg2-binary
+python-multipart
+Pillow
+httpx
+supabase
+python-dotenv
