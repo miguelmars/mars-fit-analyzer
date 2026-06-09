@@ -732,13 +732,32 @@ def save_wellness(body: WellnessIn):
     _ensure_wellness_table(conn)
     try:
         with conn.cursor() as cur:
+            # Prevenir duplicado de morning check (hr_rest en misma fecha)
+            if body.hr_rest:
+                cur.execute(
+                    "SELECT id FROM wellness WHERE date=%s AND hr_rest IS NOT NULL LIMIT 1",
+                    (body.date,)
+                )
+                existing = cur.fetchone()
+                if existing:
+                    # Actualizar en lugar de insertar
+                    cur.execute("""
+                        UPDATE wellness SET hr_rest=%s, fatigue=%s, sleep_hours=%s,
+                            notes=%s, source='manual_app', source_confidence=1.0,
+                            is_subjective=TRUE
+                        WHERE id=%s
+                    """, (body.hr_rest, body.fatigue, body.sleep_hours, body.notes, existing[0]))
+                    conn.commit()
+                    return {"ok": True, "id": existing[0], "updated": True}
             cur.execute("""
                 INSERT INTO wellness (date, category, compex_program, muscle_zone,
                     duration_min, ceragem_duration_min, ceragem_sensation_before,
                     ceragem_sensation_after, sleep_hours, sleep_quality, hr_rest,
                     garmin_sleep_score, pain_zone, pain_level, pain_start, pain_end,
-                    pain_type, stress_level, stress_cause, notes, fatigue)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    pain_type, stress_level, stress_cause, notes, fatigue,
+                    source, source_confidence, is_subjective)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                        'manual_app', 1.0, TRUE)
                 RETURNING id
             """, (body.date, body.category, body.compex_program, body.muscle_zone,
                   body.duration_min, body.ceragem_duration_min,
