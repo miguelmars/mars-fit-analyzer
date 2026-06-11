@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Epoch">
+<meta name="theme-color" content="#4A1C6B">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="stylesheet" href="/static/app.css">
+<script src="/static/config.js"></script>
+<script src="/static/utils.js"></script>
+<script src="/static/api.js"></script>
+<script src="/static/screens/home.js"></script>
+<script src="/static/screens/coach.js"></script>
+<script src="/static/screens/goals.js"></script>
+<script src="/static/screens/profile.js"></script>
+<script src="/static/screens/evolution.js"></script>
+<script src="/static/screens/plan.js"></script>
+<script src="/static/screens/sesion.js"></script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>
+<title>Epoch</title>
+</head>
+<body>
+<div class="app">
+  <div class="top"><button class="icon" id="backBtn" onclick="appBack()" aria-label="Back">‹</button><div class="brand"><div class="logo">E</div><div><small id="kicker">Epoch</small><strong id="title">Home</strong></div></div></div>
+  <main class="content">
+    <section class="screen active" id="s-home"><div class="hero"><div class="kicker">Home</div><h1 id="greeting-h1">Hello,<br>Mars.</h1><p>A living read of your load, recovery, latest session and quick actions.</p></div><div id="home-data" class="loading"><span class="spin"></span>Loading...</div></section>
+    <section class="screen" id="s-plan"><div class="hero"><div class="kicker">My Plan</div><h1>Where I am<br>and what I'm building.</h1><p>Your real plan, week by week — and what each phase is building in you.</p></div><div id="plan-data" class="loading"><span class="spin"></span>Loading...</div></section>
+    <section class="screen" id="s-sesion"><div class="hero"><div class="kicker">Session</div><h1>What this<br>session built.</h1><p>Blocks, intent, progression and an honest read — not just the average.</p></div><div id="sesion-data" class="loading"><span class="spin"></span>Loading...</div></section>
+    <section class="screen" id="s-dashboard"><div class="hero"><div class="kicker">Stats</div><h1>Current<br>state.</h1><p>Fitness, fatigue, Z2 and weekly load at a glance.</p></div><div id="dash-data" class="loading"><span class="spin"></span>Loading...</div></section>
+    <section class="screen" id="s-activities"><div class="hero"><div class="kicker">Strava History</div><h1>Your complete<br>history.</h1><p>GPS, HR, cadence and power per session. Tap any activity to see its streams.</p></div><div class="card"><div class="head"><h3>Activities</h3><span id="act-count">—</span></div><div id="act-list" class="loading"><span class="spin"></span>Loading...</div></div></section>
+    <section class="screen" id="s-gear"><div class="hero"><div class="kicker">Gear</div><h1>The<br>Rarotonga.</h1><p>Components, alerts, mileage and wear life for chain, tires and parts.</p></div><div id="gear-data" class="loading"><span class="spin"></span>Loading...</div>
+  <div id="gear-history"></div>
+  <div class="card" style="margin-top:4px">
+    <div class="head"><h3>Log service</h3></div>
+    <div class="grid2">
+      <div class="field"><label>Type</label><select id="gs-type">
+  <option value="cambio_cadena">Chain replacement</option>
+  <option value="cambio_llanta_del">Front tire replacement</option>
+  <option value="cambio_llanta_tra">Rear tire replacement</option>
+  <option value="cambio_cassette">Cassette replacement</option>
+  <option value="cambio_pastillas">Brake pads replacement</option>
+  <option value="cambio_cables">Cables/housing replacement</option>
+  <option value="cambio_bartape">Bar tape replacement</option>
+  <option value="cambio_potencia">Stem replacement</option>
+  <option value="cambio_manubrio">Handlebar replacement</option>
+  <option value="cambio_silla">Saddle replacement</option>
+  <option value="cambio_tija">Seatpost replacement</option>
+  <option value="ajuste_transmision">Drivetrain tune-up</option>
+  <option value="ajuste_frenos">Brake adjustment</option>
+  <option value="ajuste_horquilla">Fork adjustment</option>
+  <option value="lubricacion">Chain lube</option>
+  <option value="lavado">Full wash</option>
+  <option value="revision_general">General service</option>
+  <option value="instalacion_potenciometro">Power meter install</option>
+  <option value="otro">Other</option>
+</select></div>
+      <div class="field"><label>Component</label><input id="gs-comp" placeholder="Shimano HG601"></div>
+      <div class="field"><label>Current km</label><input type="number" id="gs-km" placeholder="12500"></div>
+      <div class="field"><label>Cost MXN</label><input type="number" id="gs-cost" placeholder="450"></div>
+    </div>
+    <div class="field"><label>Notes</label><input id="gs-notes" placeholder="Shop, condition..."></div>
+    <button class="btn" onclick="saveGearService()">Log service</button>
+  </div>
+</section>
+    <section class="screen" id="s-calendar"><div class="hero"><div class="kicker">Calendar</div><h1>Consistency,<br>visualized.</h1><p>An activity map to spot rhythm, gaps and big weeks.</p></div><div id="cal-data" class="loading"><span class="spin"></span>Loading...</div></section>
+    <section class="screen" id="s-performance"><div class="hero"><div class="kicker">Records</div><h1>Records and<br>progress.</h1><p>VO2Max, load, aerobic efficiency and personal bests.</p></div><div id="perf-data" class="loading"><span class="spin"></span>Loading...</div></section>
+    <section class="screen" id="s-fuerza"><div class="hero"><div class="kicker">Strength & Compex</div><h1>Muscle<br>map.</h1><p>Compex, gym, plyometrics, core and bands by muscle group.</p></div><div class="bodymap"><div class="mq"><div>Quads <strong id="mq-q">—</strong></div><div>Glutes <strong id="mq-g">—</strong></div><div>Core <strong id="mq-c">—</strong></div><div>Calves <strong id="mq-ca">—</strong></div></div><div class="human"><div class="h"></div><div class="t"></div><div class="a al"></div><div class="a ar"></div><div class="l ll"></div><div class="l lr"></div></div></div><div class="card"><div class="head"><h3>Quick log</h3><span>today</span></div><div class="field"><label>Category</label><select id="fv-cat"><option value="compex">Compex</option><option value="gym">Gym</option><option value="plyo">Plyometrics</option><option value="core">Core</option><option value="bands">Bands</option></select></div><div class="field"><label>Muscle groups</label><input id="fv-muscles" placeholder="quadriceps, glutes"></div><div class="grid2"><div class="field"><label>Intensity</label><input type="number" id="fv-intensity" placeholder="58"></div><div class="field"><label>Duration</label><input type="number" id="fv-duration" placeholder="20"></div></div><button class="btn" onclick="saveFuerza()">Save strength</button></div><div id="fuerza-data"></div></section>
+    <section class="screen" id="s-wellness"><div class="hero"><div class="kicker">Wellness</div><h1>Recover<br>better.</h1><p>Morning check, sleep, niggles, Compex and therapies. Recovery is where adaptation happens.</p></div><div id="well-data" class="loading"><span class="spin"></span>Loading...</div><div class="card" style="border:1px solid #4a9eff44"><div class="head"><h3>☀️ Morning check</h3><span>today</span></div><div class="grid2"><div class="field"><label>Resting HR <span style="color:var(--muted);font-size:10px">(bpm on waking)</span></label><input type="number" id="wv-hr" placeholder="48" min="30" max="100" style="font-size:20px;font-weight:800;color:#4a9eff"></div><div class="field"><label>Fatigue <span style="color:var(--muted);font-size:10px">(1=fresh · 10=drained)</span></label><input type="number" id="wv-fatigue" placeholder="3" min="1" max="10" style="font-size:20px;font-weight:800"></div></div><div class="grid2"><div class="field"><label>Sleep hours</label><input type="number" step="0.5" id="wv-sleep" placeholder="7.5"></div><div class="field"><label>Overall state <span style="color:var(--muted);font-size:10px">(1=bad · 10=great)</span></label><input type="number" id="wv-estado" placeholder="8" min="1" max="10" style="font-size:20px;font-weight:800;color:#3dd68c"></div></div><div class="field"><label>Pain area <span style="color:var(--muted);font-size:10px">(optional)</span></label><select id="wv-painzone" style="width:100%;padding:8px;border-radius:8px;background:var(--surface);color:var(--text);border:1px solid rgba(255,255,255,.1)"><option value="">No pain</option><option value="rodilla">Knee</option><option value="cadera">Hip</option><option value="espalda_baja">Lower back</option><option value="espalda_alta">Upper back / neck</option><option value="hombro">Shoulder</option><option value="pie_tobillo">Foot / Ankle</option><option value="cuadriceps">Quads</option><option value="gemelos">Calves</option><option value="otro">Other</option></select></div><button class="btn" onclick="saveMorningCheck()" style="background:#4a9eff">Save morning check</button></div><div class="card" style="margin-top:12px"><div class="head"><h3>Quick log</h3><span>recovery</span></div><div class="field"><label>Type</label><select id="wv-cat"><option value="sleep">Sleep</option><option value="nap">Nap / Power nap</option><option value="compex_recovery">Compex Recovery</option><option value="massage_gun">Massage gun</option><option value="ceragem">Ceragem</option><option value="pain">Pain/niggle</option><option value="stress">Stress</option></select></div><div class="field"><label>Duration / hours</label><input type="number" step="0.5" id="wv-duration" placeholder="7.5"></div><button class="btn btn2" onclick="saveWellness()">Save</button></div></section>
+  
+    <section class="screen" id="s-eficiencia">
+      <div class="hero"><div class="kicker">Aerobic efficiency</div><h1>Speed per<br>heartbeat.</h1><p>Rendimiento por latido. Objetivo: 0.155+. Base: 0.1483.</p></div>
+      <div id="eff-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </section>
+    <section class="screen" id="s-correlaciones">
+      <div class="hero"><div class="kicker">Correlations</div><h1>HR · Weight ·<br>Performance.</h1><p>Como impacta tu peso en FC y eficiencia semana a semana.</p></div>
+      <div id="corr-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </section>
+    <section class="screen" id="s-nutricion">
+      <div class="hero"><div class="kicker">Nutrition</div><h1>Gels<br>and water.</h1><p>Registro de geles caseros, hidratacion y respuesta GI.</p></div>
+      <div id="nutri-summary"><div class="loading"><span class="spin"></span></div></div>
+      <div class="card" style="margin-top:4px">
+        <div class="head"><h3>Registro rapido</h3></div>
+        <div class="grid2">
+          <div class="field"><label>Tipo gel</label><select id="nf-type"><option value="agave_casero">Agave casero</option><option value="miel_casero">Miel casero</option><option value="comercial">Comercial</option><option value="fecha">Fechas/fruta</option></select></div>
+          <div class="field"><label>Momento</label><select id="nf-moment"><option value="pre">Pre</option><option value="durante">Durante</option><option value="post">Post</option></select></div>
+          <div class="field"><label>Cantidad</label><input type="number" id="nf-count" placeholder="2"></div>
+          <div class="field"><label>Agua (ml)</label><input type="number" id="nf-agua" placeholder="500"></div>
+          <div class="field"><label>Carbos (g)</label><input type="number" id="nf-carbos" placeholder="40"></div>
+          <div class="field"><label>Resp. GI</label><select id="nf-gi"><option value="sin_problemas">Sin problemas</option><option value="inflamacion">Inflamacion</option><option value="nausea">Nausea</option></select></div>
+        </div>
+        <div class="field"><label>Energia</label><select id="nf-energy"><option value="estable">Estable</option><option value="gradual">Gradual</option><option value="caida">Caida</option></select></div>
+        <div class="field"><label>Notes</label><input id="nf-notes" placeholder="Sensaciones, timing..."></div>
+        <button class="btn" onclick="saveNutricion()">Guardar nutricion</button>
+      </div>
+    </section>
+  
+    <section class="screen" id="s-perfil">
+      <div class="hero"><div class="kicker">Profile / System</div><h1>Your data,<br>your story.</h1><p>Lo que Epoch sabe de ti, tus fuentes activas y acceso a todas las secciones.</p></div>
+      <div id="perfil-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+      <!-- Nivel 2: Semanal — acceso desde Perfil -->
+      <div class="card">
+        <div class="head"><h3>Explorar</h3><span>Nivel 2</span></div>
+        <div class="row" onclick="go('activities')" style="cursor:pointer">
+          <div class="r-ico">🚴</div><div class="r-main"><div class="r-title">Historial Strava</div><div class="r-sub">Actividades · GPS · HR · CAD · POW</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('capacidades')" style="cursor:pointer">
+          <div class="r-ico">⚡</div><div class="r-main"><div class="r-title">Capacidades</div><div class="r-sub">Aerobic engine · Strength · Power · Recovery</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('wellness')" style="cursor:pointer">
+          <div class="r-ico">❤️</div><div class="r-main"><div class="r-title">Wellness & Recovery</div><div class="r-sub">Resting HR · Sleep · Fatigue · Morning check</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('calendar')" style="cursor:pointer">
+          <div class="r-ico">📅</div><div class="r-main"><div class="r-title">Calendario</div><div class="r-sub">Heatmap de actividad · constancia visual</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('performance')" style="cursor:pointer">
+          <div class="r-ico">🌟</div><div class="r-main"><div class="r-title">Personal records</div><div class="r-sub">VO2Max · Bests · Peak eras</div></div><div class="r-val">›</div>
+        </div>
+      </div>
+      <!-- Nivel 3: Técnico -->
+      <div class="card">
+        <div class="head"><h3>Sistema</h3><span>Technical</span></div>
+        <div class="row" onclick="go('dashboard')" style="cursor:pointer">
+          <div class="r-ico">📊</div><div class="r-main"><div class="r-title">Stats & Dashboard</div><div class="r-sub">Fitness · Fatiga · Z2 · Carga semanal</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('eficiencia')" style="cursor:pointer">
+          <div class="r-ico">〰️</div><div class="r-main"><div class="r-title">Carga & Eficiencia</div><div class="r-sub">Load · Freshness · Aerobic efficiency</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('correlaciones')" style="cursor:pointer">
+          <div class="r-ico">📈</div><div class="r-main"><div class="r-title">Correlaciones</div><div class="r-sub">FC · Peso · Rendimiento por variable</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('fuerza')" style="cursor:pointer">
+          <div class="r-ico">💪</div><div class="r-main"><div class="r-title">Fuerza & Compex</div><div class="r-sub">Gym · Plyometrics · E25C · Muscle groups</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('gear')" style="cursor:pointer">
+          <div class="r-ico">⚙️</div><div class="r-main"><div class="r-title">Gear & Mantenimiento</div><div class="r-sub">La Rarotonga · Cadena · Alertas de km</div></div><div class="r-val">›</div>
+        </div>
+        <div class="row" onclick="go('nutricion')" style="cursor:pointer">
+          <div class="r-ico">🧃</div><div class="r-main"><div class="r-title">Nutrition & Gels</div><div class="r-sub">On-ride fueling log · gel tests</div></div><div class="r-val">›</div>
+        </div>
+      </div>
+      <!-- Nivel 4: Pipeline Strava — Admin oculto en Perfil -->
+      <div class="card" id="strava-panel" style="margin-top:4px;border-color:rgba(34,197,94,.18)">
+        <div class="head"><h3 style="color:#22c55e">⚡ Pipeline Strava</h3><span id="strava-pct" style="font-size:11px;color:var(--muted)">—</span></div>
+        <div id="strava-status-body" class="loading"><span class="spin"></span>Chequeando...</div>
+      </div>
+    </section>
+  
+    <section class="screen" id="s-coach">
+      <div class="hero"><div class="kicker">Coach</div><h1>What should I<br>understand today?</h1><p>A read built from your real limiter, history and current state. The why always comes first.</p></div>
+      <div id="coach-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </section>
+
+    <section class="screen" id="s-capacidades">
+      <div class="hero"><div class="kicker">Capacities</div><h1>Your body,<br>in six systems.</h1><p>Desarrollo, confianza, limitantes y referencias construidas con tu propia historia.</p></div>
+      <div id="cap-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </section>
+
+    <section class="screen" id="s-metas">
+      <div class="hero"><div class="kicker">Readiness / Goals</div><h1>How ready<br>am I?</h1><p>Events, readiness and your capacity tree. Only you define your goals.</p></div>
+      <div id="metas-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </section>
+  
+    <section class="screen" id="s-progress">
+      <div class="hero"><div class="kicker">My Evolution</div><h1>How have I<br>changed?</h1><p>Capacities, best era, trends and your athletic arc from 2018 to today.</p></div>
+      <div class="tabs" id="progress-tabs">
+        <button class="tab on" data-mode="general" onclick="setProgressMode('general')">General</button>
+        <button class="tab" data-mode="cycling" onclick="setProgressMode('cycling')">Bici</button>
+        <button class="tab" data-mode="running" onclick="setProgressMode('running')">Correr</button>
+      </div>
+      <button class="btn btn2" style="margin-bottom:12px" onclick="go('capacidades')">View athletic capacities</button>
+      <div id="progress-data"><div class="loading"><span class="spin"></span>Loading...</div></div>
+    </section>
+  </main>
+  <!-- ADR-018: 5 pantallas principales — la interfaz no expone funciones técnicas -->
+  <nav class="bnav">
+    <button class="nav active" data-s="home" onclick="go('home')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="lbl">Home</span>
+    </button>
+    <button class="nav" data-s="plan" onclick="go('plan')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
+      <span class="lbl">My Plan</span>
+    </button>
+    <button class="nav" data-s="progress" onclick="go('progress')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      <span class="lbl">Evolution</span>
+    </button>
+    <button class="nav" data-s="coach" onclick="go('coach')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="lbl">Coach</span>
+    </button>
+    <button class="nav" data-s="metas" onclick="go('metas')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <span class="lbl">Goals</span>
+    </button>
+    <button class="nav" data-s="perfil" onclick="go('perfil')">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="lbl">Profile</span>
+    </button>
+  </nav>
+</div><div class="toast" id="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
