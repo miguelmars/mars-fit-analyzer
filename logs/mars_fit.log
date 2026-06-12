@@ -1,0 +1,6 @@
+2026-06-04 11:44:45,739 | INFO | UPLOAD start filename=x.fit
+2026-06-04 11:44:45,740 | ERROR | UPLOAD error filename=x.fit error=name 'RESULTS_STORE_MAX' is not defined
+2026-06-04 12:06:21,794 | INFO | UPLOAD start filename=x.fit
+2026-06-04 12:06:21,794 | INFO | UPLOAD ok session_id=ba6fccf3 filename=x.fit duplicate=None
+2026-06-04 12:06:54,922 | INFO | UPLOAD start filename=x.fit
+2026-06-04 12:06:54,922 | INFO | UPLOAD ok session_id=42b51e71 filename=x.fit duplicate=None
