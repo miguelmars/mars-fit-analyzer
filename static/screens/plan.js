@@ -1,0 +1,154 @@
+// V7.2 — My Plan: dónde voy y qué construyo (ADR Insight-First)
+async function loadPlan(){
+  const el=$('plan-data');
+  try{
+    const [tp,tc,erg,reb,proj]=(await Promise.allSettled([
+      fetch(API+'/gpt/training-plan').then(r=>r.json()),
+      fetch(API+'/gpt/training-context').then(r=>r.json()),
+      fetch(API+'/gpt/event-readiness-gap').then(r=>r.json()),
+      fetch(API+'/gpt/week-rebalance').then(r=>r.json()),
+      fetch(API+'/gpt/event-projection').then(r=>r.json())
+    ])).map(r=>r.status==='fulfilled'?r.value:{});
+
+    if(!tp.ok||!tp.plan){
+      el.innerHTML='<div class="card"><div style="font-size:13px;line-height:1.6">No active plan. '+
+        'When you register one (Garmin or other), this is where you will see week, phase, compliance and what each stage is building.</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:8px">Planes anteriores quedan guardados con su historial.</div></div>';
+      return;
+    }
+    const p=tp.plan;
+    const wk=p.current_week||1, total=p.total_weeks||1;
+    const pct=Math.min(100,Math.round(wk/total*100));
+    const goal=(tc&&tc.goal)||null;
+
+    // Insight primero: ¿dónde voy y qué estoy construyendo?
+    const curPhase=(p.phases||[]).find(function(f){return f.is_current})||{};
+    setPhaseAccent(p.current_phase);
+    const insight='<div class="phase-hero" style="border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin-bottom:12px">'+
+      '<div style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px">Where am I?</div>'+
+      '<div style="font-size:14px;line-height:1.55;font-weight:650">Week '+wk+' of '+total+' of the '+p.name+'. '+
+      (curPhase.name?('Phase <b class="phase-text">'+curPhase.name+'</b>'+(curPhase.focus?' — building '+curPhase.focus:'')+'.'):'')+
+      '</div>'+
+      (goal?'<div class="phase-text" style="font-size:11px;font-weight:800;margin-top:6px">⏱ '+goal.weeks_to_event+' weeks to '+goal.event_name+'</div>':'')+
+    '</div>';
+
+    // Anillo de progreso del plan
+    const ring='<div class="card" style="text-align:center">'+
+      '<div class="ring" style="--p:'+pct+'%"><span>'+wk+'</span></div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-top:8px">of '+total+' weeks · '+fmtDate(p.start_date)+' → '+fmtDate(p.end_date)+'</div>'+
+    '</div>';
+
+    // Fases
+    const phaseRows=(p.phases||[]).map(function(f){
+      const col=f.is_current?'#fb923c':'var(--muted)';
+      const done=f.end<new Date().toISOString().slice(0,10);
+      return '<div class="row">'+
+        '<div class="r-ico">'+(f.is_current?'▶️':done?'✅':'·')+'</div>'+
+        '<div class="r-main"><div class="r-title" style="color:'+col+'">'+(f.name||'').toUpperCase()+(f.is_current?' · now':'')+'</div>'+
+        '<div class="r-sub">'+fmtDate(f.start)+' → '+fmtDate(f.end)+(f.focus?' · '+f.focus:'')+'</div></div>'+
+        (done||f.is_current?'<button onclick="showPhaseReport(this,\''+f.name+'\')" style="background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.3);color:#fb923c;border-radius:8px;padding:4px 10px;font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0">Report</button>':'')+
+      '</div>';
+    }).join('');
+    const phasesCard='<div class="card"><div class="head"><h3>Phases</h3><span>'+(p.event||'')+'</span></div>'+phaseRows+
+      '<div id="phase-report-box" style="display:none;font-size:12px;line-height:1.6;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)"></div></div>';
+
+    // Esta semana: sesiones con estado real
+    const stIcon={completed:'✅',skipped:'⏭️',planned:'⏳'};
+    const stLabel={completed:'completed',skipped:'moved/skipped — no guilt',planned:'pending'};
+    const weekRows=(tp.this_week||[]).map(function(s2){
+      return '<div class="row"><div class="r-ico">'+(stIcon[s2.status]||'·')+'</div>'+
+        '<div class="r-main"><div class="r-title">'+(s2.description||s2.session_type||'Session')+'</div>'+
+        '<div class="r-sub">'+(s2.planned_date?fmtDate(s2.planned_date)+' · ':'')+(stLabel[s2.status]||s2.status)+'</div></div>'+
+        (s2.matched_clean_session_id?'<span onclick="openSesion(\''+s2.matched_clean_session_id+'\')" style="color:#3dd68c;font-size:16px;cursor:pointer" title="View session">›</span>':'')+
+      '</div>';
+    }).join('')||'<div style="font-size:12px;color:var(--muted);padding:8px 0">No sessions registered this week — they come in with the weekly plan capture.</div>';
+    const weekCard='<div class="card"><div class="head"><h3>This week</h3><span>week '+wk+'</span></div>'+weekRows+'</div>';
+
+    // Cumplimiento acumulado (solo lo registrado, honesto)
+    const c=tp.compliance||{};
+    const compCard=c.registered?('<div class="grid2">'+
+      metric('Registered',c.registered,'plan sessions')+
+      metric('Completed',c.completed,'linked to real rides')+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--muted);margin:-6px 2px 10px">'+(tp.nota||'')+'</div>'):'';
+
+    // V7.3: el evento exige X, hoy tienes Y, la fase Z ataca el gap
+    let gapCard='';
+    if(erg&&erg.ok&&erg.goal&&erg.readiness_score!=null){
+      const comps=(erg.components||[]);
+      const gapKey=(erg.gap||{}).nombre||'';
+      const bars=comps.map(function(c){
+        const isGap=c.nombre===gapKey;
+        const col=isGap?'#f59e0b':(c.score>=75?'#3dd68c':'#4a9eff');
+        return '<div style="display:grid;grid-template-columns:130px 1fr 34px;gap:8px;align-items:center;padding:3px 0">'+
+          '<div style="font-size:11px;color:'+(isGap?'#f59e0b':'var(--muted)')+'">'+c.nombre+(isGap?' ← gap':'')+'</div>'+
+          '<div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(0,Math.min(100,c.score))+'%;background:'+col+'"></div></div>'+
+          '<div style="text-align:right;font-size:11px;font-weight:800;color:'+col+'">'+Math.round(c.score)+'</div></div>';
+      }).join('');
+      gapCard='<div class="card" style="border-left:3px solid #f59e0b">'+
+        '<div class="head"><h3>What am I missing for the event?</h3><span>'+Math.round(erg.readiness_score)+'/100</span></div>'+
+        '<div style="font-size:12px;line-height:1.6;margin-bottom:8px">'+erg.explanation_text+'</div>'+bars+
+        ((erg.data_gaps||[]).length?'<div style="font-size:10px;color:var(--muted);margin-top:6px">Missing data: '+erg.data_gaps.join(', ')+'</div>':'')+
+      '</div>';
+    }
+    // V8.1: la semana que se reacomoda — sin culpa, con un tap
+    let rebCard='';
+    const movibles=((reb&&reb.proposals)||[]).filter(function(p){return p.proposed_date});
+    if(reb&&reb.ok&&(reb.proposals||[]).length){
+      const rows2=(reb.proposals||[]).map(function(p){
+        return '<div class="row"><div class="r-ico">🔁</div>'+
+          '<div class="r-main"><div class="r-title">'+(p.description||p.session_type)+'</div>'+
+          '<div class="r-sub">era '+fmtShort(p.original_date)+(p.proposed_date?' → proposed '+fmtShort(p.proposed_date):'')+' · '+p.reason+'</div></div>'+
+          (p.proposed_date?'<button onclick="acceptMove(this,'+p.plan_session_id+',\''+p.proposed_date+'\')" style="background:rgba(61,214,140,.15);border:1px solid rgba(61,214,140,.35);color:#3dd68c;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0">Accept</button>':'')+
+        '</div>';
+      }).join('');
+      rebCard='<div class="card" style="border-left:3px solid #3dd68c">'+
+        '<div class="q-kicker">The week rearranges itself</div>'+
+        '<div style="font-size:12px;line-height:1.6;margin-bottom:6px">'+reb.explanation_text+'</div>'+rows2+
+        fbBtns('week-rebalance')+
+      '</div>';
+    }
+    // V8.2: proyección al evento
+    let projCard='';
+    if(proj&&proj.ok&&proj.available){
+      projCard='<div class="card" style="border-left:3px solid #a78bfa">'+
+        '<div class="q-kicker">How do I arrive if I keep this up?</div>'+
+        '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">'+
+          '<span style="font-size:24px;font-weight:950;color:#a78bfa">~'+Math.round(proj.projected_readiness)+'</span>'+
+          '<span style="font-size:11px;color:var(--muted)">readiness proyectado (hoy '+Math.round(proj.readiness_now)+', banda ±'+Math.round(proj.band)+')</span>'+
+        '</div>'+
+        '<div style="font-size:12px;line-height:1.6">'+proj.explanation_text+'</div>'+
+        fbBtns('event-projection')+
+      '</div>';
+    }
+    el.innerHTML=insight+rebCard+ring+gapCard+projCard+phasesCard+weekCard+compCard;
+  }catch(e){el.innerHTML='<div class="card" style="color:var(--muted)">'+e.message+'</div>';}
+}
+
+window.showPhaseReport=async function(btn,phase){
+  const box=document.getElementById('phase-report-box');
+  if(!box)return;
+  if(box.style.display==='block'&&box.dataset.phase===phase){box.style.display='none';return;}
+  box.style.display='block';box.dataset.phase=phase;box.textContent='Reading the phase…';
+  try{
+    const d=await fetch(API+'/gpt/phase-report?phase='+encodeURIComponent(phase)).then(r=>r.json());
+    if(!d.ok){box.textContent='No data for this phase';return;}
+    const t=d.totals||{};
+    box.innerHTML='<b style="color:#fb923c">Reporte · '+phase.toUpperCase()+(d.in_progress?' (in progress)':'')+'</b><br>'+
+      d.explanation_text+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:10px;color:var(--muted)">'+
+      '<span>'+t.sessions+' sessions</span><span>'+t.km+' km</span><span>'+t.hours+' h</span><span>'+t.ascent_m+' m↑</span>'+
+      (d.efficiency_delta_pct!=null?'<span style="color:'+(d.efficiency_delta_pct>0?'#3dd68c':'#f59e0b')+'">eficiencia '+(d.efficiency_delta_pct>0?'+':'')+d.efficiency_delta_pct+'%</span>':'')+
+      '</div>';
+  }catch(e){box.textContent='Could not load the report';}
+};
+
+
+window.acceptMove=async function(btn,psId,newDate){
+  btn.disabled=true;btn.textContent='...';
+  try{
+    const d=await fetch(API+'/api/plan-session/'+psId+'/move?new_date='+newDate+'&reason='+encodeURIComponent('rearrangement suggested by Epoch'),{method:'POST'}).then(r=>r.json());
+    toast(d.ok?'Moved — this is the week now':'Error');
+    loadPlan();
+  }catch(e){toast('Network error');btn.disabled=false;}
+};
