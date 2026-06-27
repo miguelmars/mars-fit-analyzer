@@ -1,9 +1,0 @@
-fastapi==0.128.8
-uvicorn[standard]==0.39.0
-fitparse==1.2.0
-psycopg2-binary==2.9.12
-python-multipart==0.0.20
-Pillow==11.3.0
-httpx==0.28.1
-supabase==2.31.0
-python-dotenv==1.2.1
